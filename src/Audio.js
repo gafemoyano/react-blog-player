@@ -1,25 +1,13 @@
-export default class ChangelogAudio {
-  constructor() {
-    if (typeof Audio === "undefined") {
-      this.hasAudio = false;
-      return
-    } else {
-      this.hasAudio = true;
-    }
+import React, {Component, PropTypes} from 'react'
 
-    this.audio = new Audio();
+
+export default class ChangelogAudio extends Component {
+  propTypes: {
+    audioUrl: PropTypes.string,
   }
-
-  load(file, callback) {
-    if (callback) {
-      this.runOnce("canplaythrough", callback);
-    }
-
-    this.audio.type = "audio/mpeg";
-    this.audio.src = file;
-    this.audio.load();
+  componentWillUpdate(nextProps, nextState){
+    this.audio.currentTime = nextProps.
   }
-
   onTimeUpdate(callback) {
     this.run("timeupdate", callback);
   }
@@ -118,5 +106,15 @@ changeSpeed() {
     }
 
     this.audio.addEventListener(eventName, listener);
+  }
+  render() {
+    return(
+      <audio
+        ref={(node) => this.audio = node}
+        preload='auto'
+        type='audio/mpeg'
+        src={this.props.file}
+      />
+    )
   }
 }

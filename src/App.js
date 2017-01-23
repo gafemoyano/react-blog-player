@@ -18,9 +18,9 @@ class App extends Component {
   }
   render() {
     return (
-      <OnsitePlayer 
-        canPlay={this.state.canPlay} 
-        handlePlay={this.handlePlay}        
+      <OnsitePlayer
+        canPlay={this.state.canPlay}
+        handlePlay={this.handlePlay}
       />
     );
   }

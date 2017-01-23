@@ -1,27 +1,34 @@
-import React, { Component } from 'react'
+import React, { Component, PropTypes } from 'react'
 import ChangelogAudio from "./Audio";
 import Episode from './episode'
 import axios from 'axios';
-
+import cx from 'classnames'
+import PodcastCoverArt from './assets/img/podcast-cover-art.svg'
+import PodcastArrow from './assets/img/podcast-arrow.svg'
 
 class OnsitePlayer extends Component {
+  props = {
+
+  }
   state = {
     audio: new ChangelogAudio (),
-    episode: {},
-    detailsLoaded: false,
     audioLoaded: false,
+    isActive: true,
+    isHidden: false,
+    isPaused: true,
+    isPlaying: false,
+    episode: {
+      art: PodcastCoverArt,
+      title: 'An awesome wave',
+      blogTitle: 'Episode 44: Whatever',
+    },
+    detailsLoaded: false,
   }
   componentDidMount() {
 
   }
   canPlay() {
     console.log('canPlay')
-  }
-  isActive() {
-    console.log('isActive')
-  }
-  isPlaying() {
-    console.log('isPlaying-')
   }
   play() {
     console.log('play')
@@ -33,17 +40,25 @@ class OnsitePlayer extends Component {
   }
   togglePlayPause() {
     console.log('togglePlayPause')
-    if (this.isPlaying()) {
+    if (this.state.isPlaying) {
       this.pause();
     } else {
       this.play();
     }
   }
-  close() {
-    console.log('close')
+  close = () => {
+    this.pause()
+    this.setState({isActive: false})
   }
-  hide() {
-    console.log('close')
+
+  hide = () => {
+    this.setState({isHidden: true})
+  }
+  loadEpisode(event) {
+    event.preventDefault()
+    if(this.canPlay()) {
+
+    }
   }
   loadAudio(audioUrl) {
     this.setState({audioLoaded: false})
@@ -111,120 +126,195 @@ class OnsitePlayer extends Component {
     this.nextButton.first().removeAttribute("href");
     this.nextButton.first().removeAttribute("data-play");
   }
-  scrub(value) {
-
+  scrub(to) {
+    this.setState({
+      isScrubbing: true,
+      percentComplete: to / this.episode.duration() * 100
+    })
   }
-  scrubEnd(value) {
-
+  scrubEnd(to) {
+    this.setState({
+      isScrubbing: false,
+    })
   }
   seekBy() {
 
   }
-
+  show() {
+    this.setState({isActive:true, isHidden: false})
+  }
   render () {
+    const playerClasses = cx(
+      'podcast-player',
+      'js-player',
+      {'podcast-player--is-active': this.state.isActive},
+      {'podcast-player--is-hidden': this.state.isHidden},
+    )
     return (
-<div className="player-container" ref={(node) =>  {this.container = node}}>
-  <div id="player" ref={(node) =>  {this.player = node}}>
-    <figure className="podcast-player js-player">
-      <nav className="podcast-player_nav">
-        <button
-          className="podcast-player_nav_button podcast-player_nav_button--hide js-player-hide"
-          title="Hide Player"
-          ref={(node) =>  {this.hideButton = node}}>
-          </button>
-        <button
-          className="podcast-player_nav_button podcast-player_nav_button--close js-player-close"
-          title="Close Player"
-          ref={(node) =>  {this.closeButton = node}}>
-        </button>
-      </nav>
-      <img
-        className="podcast-player_art js-player-art"
-        role="presentation"
-        ref={(node) =>  {this.art = node}}
-      />
-      <div className="podcast-player_details">
-        <div className="podcast-player_details_title">
-          <span
-            className="js-player-now-playing"
-            ref={(node) =>  {this.nowPlaying = node}}>
-          </span>
-          <figcaption
-            className="js-player-title"
-            ref={(node) =>  {this.title = node}}>
-          </figcaption>
-        </div>
-      </div>
-      <div className="podcast-player_buttons">
-        <button
-          className="podcast-player-button podcast-player-button--episode js-player-prev-button"
-          title="Listen to the previous episode"
-          ref={(node) =>  {this.prevButton = node}}>
-          <span
-            className="js-player-prev-number"
-            ref={(node) =>  {this.prevNumber = node}}>
-          </span>
-          <img src="" alt="Previous episode"/>
-        </button>
-        <button
-          className="podcast-player-button podcast-player-button--back15 js-player-back-button"
-          title="Seek back 15 seconds"
-          ref={(node) =>  {this.backButton = node}}>
-        </button>
-
-        <button
-          className="podcast-player-button podcast-player-button--play js-player-play-button"
-          ref={(node) =>  {this.playButton = node}}>
-        </button>
-
-        <button
-          className="podcast-player-button podcast-player-button--forward15 js-player-forward-button"
-          title="Seek forward 15 seconds"
-          ref={(node) =>  {this.forwardButton = node}}>
-        </button>
-        <button className="podcast-player-button podcast-player-button--episode js-player-next-button" title="Listen to the next episode">
-          <img
-            className="flip-horizontal"
-            src=""
-            alt="Next episode"
-          />
-            <span
-              className="js-player-next-number"
-              ref={(node) =>  {this.nextNumber = node}}
-              >
-            </span>
-        </button>
-      </div>
-      <form className="podcast-player_slider">
-        <div className="range-slider">
-          <span className="range-slider_above"><span className="js-player-now-playing"></span></span>
-          <div className="range-slider_range_wrap">
-            <input
-              className="range-slider_range js-player-scrubber"
-              type="range"
-              value="0"
-              min="0"
-              max="500"
-              ref={(node) =>  {this.scrubber = node}}
-            />
-            <div
-              className="range-slider_range_track js-player-track"
-              ref={(node) =>  {this.track = node}}
-            >
-            </div>
-          </div>
-          <span className="range-slider_below"> <span className="js-player-title"></span>
-            <output>
-              <b className="js-player-current">0:00</b> / <span className="js-player-duration" ref={(node) =>  {this.duration = node}}>0:00</span>
-            </output>
-          </span>
-        </div>
-      </form>
-    </figure>
+<div>
+  <div><button onClick={this.hide}>Toggle Player</button></div>
+  <div className="player-container" ref={(node) =>  {this.container = node}}>
+    <div id="player" ref={(node) => this.player = node}>
+      <figure className={playerClasses}>
+        <PlayerNav
+          hide={this.hide}
+          close={this.close}
+        />
+        <img
+          className="podcast-player_art js-player-art"
+          role="presentation"
+          src={this.state.episode.art}
+        />
+        <PlayerDetails
+          title={this.state.episode.title}
+          blogTitle={this.state.episode.blogTitle} />
+        <PlayerButtons isPaused={this.state.isPaused} />
+        <PlayerSlider />
+      </figure>
+    </div>
   </div>
 </div>
     )
   }
+}
+
+const PlayerNav = ({hide, close}) => {
+  return(
+    <nav className="podcast-player_nav">
+      <button
+        className="podcast-player_nav_button podcast-player_nav_button--hide js-player-hide"
+        title="Hide Player"
+        onClick={() => hide}>
+        </button>
+      <button
+        className="podcast-player_nav_button podcast-player_nav_button--close js-player-close"
+        title="Close Player"
+        onClick={() =>  close}>
+      </button>
+    </nav>
+  )
+}
+
+PlayerNav.propTypes = {
+  hide: PropTypes.func.isRequired,
+  close: PropTypes.func.isRequired,
+}
+
+const PlayerDetails = ({title, blogTitle}) => {
+  return (
+    <div className="podcast-player_details">
+      <div className="podcast-player_details_title">
+        <span className="js-player-now-playing">
+          {blogTitle}
+        </span>
+        <figcaption className="js-player-title">
+          {title}
+        </figcaption>
+      </div>
+    </div>
+  )
+}
+PlayerDetails.propTypes = {
+  title: PropTypes.string,
+  blogTitle: PropTypes.string,
+}
+
+const PlayerButtons = ({isPaused, playEpisode}) => {
+  const playButtonClasses = cx(
+    'podcast-player-button',
+    'podcast-player-button--play',
+    'js-player-play-button',
+    {'is-paused': isPaused}
+  )
+  return (
+    <div className="podcast-player_buttons">
+      <button
+        className="podcast-player-button podcast-player-button--episode js-player-prev-button"
+        title="Listen to the previous episode"
+        ref={(node) =>  {this.prevButton = node}}>
+        <span
+          className="js-player-prev-number"
+          ref={(node) =>  {this.prevNumber = node}}>
+        </span>
+        <img src={PodcastArrow} alt="Previous episode"/>
+      </button>
+      <button
+        className="podcast-player-button podcast-player-button--back15 js-player-back-button"
+        title="Seek back 15 seconds"
+        ref={(node) =>  {this.backButton = node}}>
+      </button>
+
+      <button
+        className={playButtonClasses}
+        ref={(node) =>  {this.playButton = node}}>
+      </button>
+
+      <button
+        className="podcast-player-button podcast-player-button--forward15 js-player-forward-button"
+        title="Seek forward 15 seconds"
+        ref={(node) =>  {this.forwardButton = node}}>
+      </button>
+      <button className="podcast-player-button podcast-player-button--episode js-player-next-button" title="Listen to the next episode">
+        <img
+          className="flip-horizontal"
+          src={PodcastArrow}
+          alt="Next episode"
+        />
+          <span
+            className="js-player-next-number"
+            ref={(node) =>  {this.nextNumber = node}}
+            >
+          </span>
+      </button>
+    </div>
+  )
+}
+
+PlayerButtons.propTypes = {
+  title: PropTypes.string,
+  blogTitle: PropTypes.string,
+}
+
+const PlayerSlider = ({currentSeek, handleScrubberInput, handleScrubberChange}) => {
+  const seek = Math.round(this.audio.currentSeek() || 0)
+  const percentComplete = seek / this.episode.duration() * 100
+
+  return (
+    <form className="podcast-player_slider">
+      <div className="range-slider">
+        <span className="range-slider_above">
+          <span className="js-player-now-playing"></span>
+        </span>
+        <div className="range-slider_range_wrap">
+          <input
+            className="range-slider_range js-player-scrubber"
+            type="range"
+            value={seek}
+            onInput={() => handleScrubberInput}
+            onChange={() => handleScrubberChange}
+            min="0"
+            max="500"
+            ref={(node) =>  {this.scrubber = node}}
+          />
+          <div
+            className="range-slider_range_track js-player-track"
+            style={{width: `${percentComplete}%`}}
+          >
+          </div>
+        </div>
+        <span className="range-slider_below"> <span className="js-player-title"></span>
+          <output>
+            <b className="js-player-current">0:00</b> / <span className="js-player-duration" ref={(node) =>  {this.duration = node}}>0:00</span>
+          </output>
+        </span>
+      </div>
+    </form>
+  )
+}
+PlayerSlider.propTypes = {
+  currentSeek: PropTypes.number.isRequired,
+  handleScrubberInput: PropTypes.func.isRequired,
+  handleScrubberChange: PropTypes.func.isRequired,
 }
 
 export default OnsitePlayer
