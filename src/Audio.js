@@ -2,11 +2,14 @@ import React, {Component, PropTypes} from 'react'
 
 
 export default class ChangelogAudio extends Component {
-  propTypes: {
+  propTypes = {
     audioUrl: PropTypes.string,
+    defaultTime: PropTypes.number,
   }
-  componentWillUpdate(nextProps, nextState){
-    this.audio.currentTime = nextProps.
+  componentDidUpdate(prevProps){
+    if (prevProps.defaultTime !== this.props.defaultTime) {
+      this.updateCurrentTime();
+    }
   }
   onTimeUpdate(callback) {
     this.run("timeupdate", callback);
@@ -106,6 +109,11 @@ changeSpeed() {
     }
 
     this.audio.addEventListener(eventName, listener);
+  }
+  updateCurrentTime() {
+    if (this.audio.readyState) {
+      this.audio.currentTime = this.props.defaultTime
+    }
   }
   render() {
     return(

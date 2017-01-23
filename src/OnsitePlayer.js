@@ -169,7 +169,9 @@ class OnsitePlayer extends Component {
           title={this.state.episode.title}
           blogTitle={this.state.episode.blogTitle} />
         <PlayerButtons isPaused={this.state.isPaused} />
-        <PlayerSlider />
+        <PlayerSlider
+          episode={this.state.episode}
+        />
       </figure>
     </div>
   </div>
@@ -275,9 +277,9 @@ PlayerButtons.propTypes = {
   blogTitle: PropTypes.string,
 }
 
-const PlayerSlider = ({currentSeek, handleScrubberInput, handleScrubberChange}) => {
-  const seek = Math.round(this.audio.currentSeek() || 0)
-  const percentComplete = seek / this.episode.duration() * 100
+const PlayerSlider = ({currentSeek, episode, handleScrubberInput, handleScrubberChange}) => {
+  const seek = Math.round(currentSeek || 0)
+  const percentComplete = seek / episode.duration() * 100
 
   return (
     <form className="podcast-player_slider">
