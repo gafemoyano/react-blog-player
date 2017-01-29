@@ -1,5 +1,5 @@
 import React, { Component, PropTypes } from 'react'
-import ChangelogAudio from "./Audio";
+import AudioWrapper from "./AudioWrapper";
 import Episode from './episode'
 import axios from 'axios';
 import cx from 'classnames'
@@ -10,12 +10,17 @@ import PodcastArrow from './assets/img/podcast-arrow.svg'
 
 class OnsitePlayer extends Component {
   state = {
-    audio: new ChangelogAudio (),
     audioLoaded: false,
     isActive: true,
     isHidden: false,
     isPaused: true,
-    isPlaying: false,
+    isPlaying: true,
+    isMuted: false,
+    isLoading: false,
+    loop: false,
+    defaultTime: 0,
+    defaultVolume: 0.5,
+    source: SampleAudio,
     episode: new Episode({
       prev: null,
       next:null,
@@ -31,34 +36,46 @@ class OnsitePlayer extends Component {
   componentDidMount() {
 
   }
-  canPlay() {
-    console.log('canPlay')
+  play = () => {
+    this.setState({isPaused: true, isPlaying: true})
   }
-  play() {
-    console.log('play')
+  pause = () => {
+    this.setState({isPaused: true, isPlaying: false})
   }
-  pause() {
-    console.log('pause')
-    // this.audio.pause();
+  handleLoadedData = (duration) => {
+    console.log(duration)
+    const episode = this.state.episode
+    episode.duration =duration
+    this.setState({episode: episode})
   }
-  togglePlayPause() {
-    console.log('togglePlayPause')
-    if (this.state.isPlaying) {
-      this.pause();
-    } else {
-      this.play();
-    }
+  handlePlayPause = () => {
+    this.state.isPlaying ? this.pause() : this.play()
+  }
+  handleTimeUpdate = (data) => {
+  }
+  handleProgress = (event) => {
+    console.log(event )
   }
   close = () => {
     this.pause()
     this.setState({isActive: false})
   }
-
-  hide = () => {
-
+  hide() {
+    this.setState({
+      isHidden: true,
+      isPlaying: false,
+      isPaused: true,
+    })
+  }
+  show() {
+    this.setState({
+      isActive:true,
+      isHidden: false,
+    })
   }
   togglePlayer = () => {
-    this.setState({isHidden: !this.state.isHidden})
+    console.log(this.state.isHidden)
+    this.state.isHidden ? this.show() : this.hide()
   }
 
   loadEpisode(event) {
@@ -67,13 +84,7 @@ class OnsitePlayer extends Component {
 
     }
   }
-  loadAudio(audioUrl) {
-    this.setState({audioLoaded: false})
-    this.audio.load(audioUrl, () => {
-      this.setState({audioLoaded: true})
-      this.play()
-    })
-  }
+
   loadDetails(detailsUrl) {
     this.setState({detailsLoaded: false})
     axios.get(detailsUrl)
@@ -92,47 +103,8 @@ class OnsitePlayer extends Component {
     this.title.text(this.episode.title())
     this.duration.text(Episode.formatTime(this.episode.duration()))
     this.scrubber.attr("max", this.episode.duration())
-
-    // if (this.episode.hasPrev()) {
-    //   this.prevNumber.text(this.episode.prevNumber())
-    //   this.prevButton.attr("title", "Listen to " + this.episode.prevTitle())
-    //   this.prevButton.attr("href", this.episode.prevAudio())
-    //   this.prevButton.data("play", this.episode.prevLocation())
-    // } else {
-    //   this.resetPrevUI()
-    // }
-
-    // if (this.episode.hasNext()) {
-    //   this.nextNumber.text(this.episode.nextNumber())
-    //   this.nextButton.attr("title", "Listen to " + this.episode.nextTitle())
-    //   this.nextButton.attr("href", this.episode.nextAudio())
-    //   this.nextButton.data("play", this.episode.nextLocation())
-    // } else {
-    //   this.resetNextUI()
-    // }
-  }
-  resetUI() {
-    this.nowPlaying.text("Loading...");
-    this.title.text("");
-    this.current.text("0:00");
-    this.duration.text("0:00");
-    this.resetPrevUI();
-    this.resetNextUI();
-    this.scrubber.first().value = 0;
-    this.track.first().style.width = "0%";
   }
 
-  resetPrevUI() {
-    this.prevNumber.text("");
-    this.prevButton.first().removeAttribute("href");
-    this.prevButton.first().removeAttribute("data-play");
-  }
-
-  resetNextUI() {
-    this.nextNumber.text("");
-    this.nextButton.first().removeAttribute("href");
-    this.nextButton.first().removeAttribute("data-play");
-  }
   scrub(to) {
     this.setState({
       isScrubbing: true,
@@ -147,9 +119,7 @@ class OnsitePlayer extends Component {
   seekBy() {
 
   }
-  show() {
-    this.setState({isActive:true, isHidden: false})
-  }
+
   render () {
     const playerClasses = cx(
       'podcast-player',
@@ -159,9 +129,19 @@ class OnsitePlayer extends Component {
     )
     return (
       <div>
-        <div>
-          <button onClick={this.hide}>Toggle Player</button>
-        </div>
+        <AudioWrapper
+          source={this.state.source}
+          isPlaying={this.state.isPlaying}
+          isMuted={this.state.isMuted}
+          isLoading={this.state.isLoading}
+          loop={this.state.loop}
+          defaultTime={this.state.defaultTime}
+          defaultVolume={this.state.defaultVolume}
+          onProgress={this.handleProgress}
+          onTimeUpdate={this.handleTimeUpdate}
+          onEnd={this.handleScrubberChange}
+          onLoadedData={this.handleLoadedData}
+        />
         <div className="player-container" ref={(node) =>  {this.container = node}}>
           <div id="player" ref={(node) => this.player = node}>
             <figure className={playerClasses}>
@@ -173,7 +153,12 @@ class OnsitePlayer extends Component {
               <PlayerDetails
                 title={this.state.episode.title()}
                 blogTitle={this.state.episode.blogTitle} />
-              <PlayerButtons isPaused={this.state.isPaused} />
+              <PlayerButtons
+                isPaused={this.state.isPaused}
+                isPlaying={this.state.isPlaying}
+                isLoading={this.state.isLoading}
+                onPlayPause={this.handlePlayPause}
+              />
               <PlayerSlider
                 episode={this.state.episode}
               />
@@ -226,12 +211,14 @@ PlayerDetails.propTypes = {
   blogTitle: PropTypes.string,
 }
 
-const PlayerButtons = ({isPaused, playEpisode}) => {
+const PlayerButtons = ({isPaused, isPlaying, isLoading, onPlayPause}) => {
   const playButtonClasses = cx(
     'podcast-player-button',
     'podcast-player-button--play',
     'js-player-play-button',
-    {'is-paused': isPaused}
+    {'is-paused': isPaused},
+    {'is-playing': isPlaying},
+    {'is-loading': isLoading},
   )
   return (
     <div className="podcast-player_buttons">
@@ -249,7 +236,8 @@ const PlayerButtons = ({isPaused, playEpisode}) => {
       </button>
 
       <button
-        className={playButtonClasses}>
+        className={playButtonClasses}
+        onClick={onPlayPause}>
       </button>
 
       <button
