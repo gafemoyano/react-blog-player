@@ -8,7 +8,7 @@ export default class AudioWrapper extends Component {
     isMuted: PropTypes.bool.isRequired,
     isLoading: PropTypes.bool.isRequired,
     loop: PropTypes.bool.isRequired,
-    defaultTime: PropTypes.number.isRequired,
+    currentTime: PropTypes.number.isRequired,
     defaultVolume: PropTypes.number.isRequired,
     onProgress: React.PropTypes.func.isRequired,
     onTimeUpdate: React.PropTypes.func.isRequired,
@@ -32,7 +32,7 @@ export default class AudioWrapper extends Component {
     if (prevProps.isPlaying !== this.props.isPlaying) {
       this.updateIsPlaying()
     }
-    if (prevProps.defaultTime !== this.props.defaultTime) {
+    if (prevProps.currentTime !== this.props.currentTime) {
       this.updateCurrentTime()
     }
     if (prevProps.defaultVolume !== this.props.defaultVolume) {
@@ -58,7 +58,6 @@ export default class AudioWrapper extends Component {
     this.props.onEnd()
   }
   handleLoadedData = () => {
-      console.log('loaded')
       this.props.onLoadedData(this.audio.duration)
 
   }
@@ -70,7 +69,7 @@ export default class AudioWrapper extends Component {
   }
   updateCurrentTime() {
     if (this.audio.readyState) {
-      this.audio.currentTime = this.props.defaultTime;
+      this.audio.currentTime = this.props.currentTime;
     }
   }
 

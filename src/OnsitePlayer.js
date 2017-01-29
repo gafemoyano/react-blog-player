@@ -4,16 +4,30 @@ import Episode from './episode'
 import axios from 'axios';
 import cx from 'classnames'
 import SampleAudio from './assets/audio/Bloodflood.mp3'
-import SampleArt from './assets/audio/an-awesome-wave.jpg'
-import DefaultArt from './assets/img/podcast-cover-art.svg'
+import DefaultArt from './assets/img/logo.webp'
 import PodcastArrow from './assets/img/podcast-arrow.svg'
 
 class OnsitePlayer extends Component {
+  static propTypes = {
+    audioTitle: PropTypes.string,
+    playerTitle: PropTypes.string,
+    artUrl: PropTypes.string,
+    audioUrl: PropTypes.string,
+    nextAudioUrl: PropTypes.string,
+    nextAudioTitle: PropTypes.string,
+    prevAudioUrl: PropTypes.string,
+    prevAudioTitle: PropTypes.string,
+  }
+  static defaultProps = {
+    albumArt: DefaultArt,
+    audioTitle: "Your favorite song - Your favorite album",
+    playerTitle: "React Onsite Player",
+  }
   state = {
     audioLoaded: false,
     isActive: true,
     isHidden: false,
-    isPaused: true,
+    isPaused: true,Art: PropTypes.string,
     isPlaying: true,
     isMuted: false,
     isLoading: false,
@@ -21,20 +35,10 @@ class OnsitePlayer extends Component {
     defaultTime: 0,
     defaultVolume: 0.5,
     source: SampleAudio,
-    episode: new Episode({
-      prev: null,
-      next:null,
-      art_url: SampleArt,
-      audio_url: SampleAudio,
-      podcast: 'Week 1',
-      duration: 3600,
-      title: 'An awesome wave',
-      blogTitle: 'Episode 44: Whatever',
-    }),
+    trackDuration : 0,
+    currentTime: 0,
+    currentAudioTitle: "",
     detailsLoaded: false,
-  }
-  componentDidMount() {
-
   }
   play = () => {
     this.setState({isPaused: true, isPlaying: true})
@@ -43,18 +47,32 @@ class OnsitePlayer extends Component {
     this.setState({isPaused: true, isPlaying: false})
   }
   handleLoadedData = (duration) => {
-    console.log(duration)
-    const episode = this.state.episode
-    episode.duration =duration
-    this.setState({episode: episode})
+    this.setState({trackDuration: duration})
   }
   handlePlayPause = () => {
     this.state.isPlaying ? this.pause() : this.play()
   }
   handleTimeUpdate = (data) => {
+    this.setState({
+      trackDuration: data.trackDuration,
+    })
+  }
+  handlePlaybackEnd = () => {
+    this.setState({
+      isPaused: false,
+      isPlaying: false,
+      trackDuration : 0,
+      currentTime: 0,
+    })
   }
   handleProgress = (event) => {
     console.log(event )
+  }
+  handleScrubberInput = (event) => {
+
+  }
+  handleScrubberChange = (event) => {
+
   }
   close = () => {
     this.pause()
@@ -78,13 +96,6 @@ class OnsitePlayer extends Component {
     this.state.isHidden ? this.show() : this.hide()
   }
 
-  loadEpisode(event) {
-    event.preventDefault()
-    if(this.canPlay()) {
-
-    }
-  }
-
   loadDetails(detailsUrl) {
     this.setState({detailsLoaded: false})
     axios.get(detailsUrl)
@@ -96,13 +107,6 @@ class OnsitePlayer extends Component {
       this.show()
     })
     .catch(error => console.log(error))
-  }
-  loadUI() {
-    this.art.attr("src", process.env.PUBLIC_URL + '/an-awesome-wave.jpg')
-    this.nowPlaying.text(this.episode.nowPlaying())
-    this.title.text(this.episode.title())
-    this.duration.text(Episode.formatTime(this.episode.duration()))
-    this.scrubber.attr("max", this.episode.duration())
   }
 
   scrub(to) {
@@ -135,24 +139,24 @@ class OnsitePlayer extends Component {
           isMuted={this.state.isMuted}
           isLoading={this.state.isLoading}
           loop={this.state.loop}
-          defaultTime={this.state.defaultTime}
+          currentTime={this.state.currentTime}
           defaultVolume={this.state.defaultVolume}
           onProgress={this.handleProgress}
           onTimeUpdate={this.handleTimeUpdate}
-          onEnd={this.handleScrubberChange}
+          onEnd={this.handlePlaybackEnd}
           onLoadedData={this.handleLoadedData}
         />
-        <div className="player-container" ref={(node) =>  {this.container = node}}>
-          <div id="player" ref={(node) => this.player = node}>
-            <figure className={playerClasses}>
+        <div className="player-container">
+          <div id="player">
+           <figure className={playerClasses}>
               <PlayerNav
                 togglePlayer={this.togglePlayer}
                 close={this.close}
               />
-              <PlayerArt source={this.state.episode.art()} />
+              <PlayerArt source={this.props.artUrl} />
               <PlayerDetails
-                title={this.state.episode.title()}
-                blogTitle={this.state.episode.blogTitle} />
+                title={this.props.playerTitle}
+                audioTitle={this.props.audioTitle} />
               <PlayerButtons
                 isPaused={this.state.isPaused}
                 isPlaying={this.state.isPlaying}
@@ -160,7 +164,12 @@ class OnsitePlayer extends Component {
                 onPlayPause={this.handlePlayPause}
               />
               <PlayerSlider
-                episode={this.state.episode}
+                trackDuration={this.state.trackDuration}
+                currentTime={this.state.currentTime}
+                title={this.props.playerTitle}
+                audioTitle={this.props.audioTitle}
+                onScrubberInput={this.handleScrubberInput}
+                onScrubberChange={this.handleScrubberChange}
               />
             </figure>
           </div>
@@ -186,29 +195,28 @@ const PlayerNav = ({togglePlayer, close}) => {
     </nav>
   )
 }
-
 PlayerNav.propTypes = {
   togglePlayer: PropTypes.func.isRequired,
   close: PropTypes.func.isRequired,
 }
 
-const PlayerDetails = ({title, blogTitle}) => {
+const PlayerDetails = ({playerTitle, audioTitle}) => {
   return (
     <div className="podcast-player_details">
       <div className="podcast-player_details_title">
         <span className="js-player-now-playing">
-          {blogTitle}
+          {playerTitle}
         </span>
         <figcaption className="js-player-title">
-          {title}
+          {audioTitle}
         </figcaption>
       </div>
     </div>
   )
 }
 PlayerDetails.propTypes = {
-  title: PropTypes.string,
-  blogTitle: PropTypes.string,
+  playerTitle: PropTypes.string,
+  audioTitle: PropTypes.string,
 }
 
 const PlayerButtons = ({isPaused, isPlaying, isLoading, onPlayPause}) => {
@@ -250,63 +258,68 @@ const PlayerButtons = ({isPaused, isPlaying, isLoading, onPlayPause}) => {
           src={PodcastArrow}
           alt="Next episode"
         />
-          <span
-            className="js-player-next-number"
-            ref={(node) =>  {this.nextNumber = node}}
-            >
-          </span>
+          <span className="js-player-next-number"></span>
       </button>
     </div>
   )
 }
 
 PlayerButtons.propTypes = {
-  title: PropTypes.string,
-  blogTitle: PropTypes.string,
+  isPaused: PropTypes.bool.isRequired,
+  isPlaying: PropTypes.bool.isRequired,
+  isLoading: PropTypes.bool.isRequired,
+  onPlayPause: PropTypes.func.isRequired,
 }
 
 const PlayerArt = ({source}) => (
   <img
     className="podcast-player_art js-player-art"
     role="presentation"
-    src={source || DefaultArt}
-  />
+    src={source} />
 )
 
 PlayerArt.propTypes = {
-  source: PropTypes.string,
+  source: PropTypes.string.isRequired,
 }
 
-const PlayerSlider = ({currentSeek, episode, handleScrubberInput, handleScrubberChange}) => {
-  const seek = Math.round(currentSeek || 0)
-  const percentComplete = seek / episode.duration() * 100
-  const current = Episode.formatTime(currentSeek)
+const PlayerSlider = ({
+  trackDuration,
+  currentTime,
+  title,
+  audioTitle,
+  onScrubberInput,
+  onScrubberChange}) => {
+
+  const roundedCurrentTime = Math.round(currentTime || 0)
+  const percentComplete = roundedCurrentTime / trackDuration * 100
+  const formattedCurrentTime = Episode.formatTime(currentTime | 0)
+  const formattedDuration = Episode.formatTime(trackDuration| 0)
   return (
     <form className="podcast-player_slider">
       <div className="range-slider">
         <span className="range-slider_above">
-          <span className="js-player-now-playing"></span>
+          <span className="js-player-now-playing">{title}</span>
         </span>
         <div className="range-slider_range_wrap">
           <input
             className="range-slider_range js-player-scrubber"
             type="range"
-            value={seek}
-            onInput={() => handleScrubberInput}
-            onChange={() => handleScrubberChange}
+            value={roundedCurrentTime}
+            onInput={() => onScrubberInput}
+            onChange={() => onScrubberChange}
             min="0"
-            max="500"
-            ref={(node) =>  {this.scrubber = node}}
-          />
+            max={trackDuration}/>
           <div
             className="range-slider_range_track js-player-track"
             style={{width: `${percentComplete}%`}}
           >
           </div>
         </div>
-        <span className="range-slider_below"> <span className="js-player-title"></span>
+        <span className="range-slider_below">
+          <span className="js-player-title">{audioTitle}</span>
           <output>
-            <b className="js-player-current">{current}</b> / <span className="js-player-duration">{Episode.formatTime(episode.duration())}</span>
+            <b className="js-player-current">{formattedCurrentTime}</b> /
+            <span className="js-player-duration"> {formattedDuration}</span>
           </output>
         </span>
       </div>
@@ -314,9 +327,10 @@ const PlayerSlider = ({currentSeek, episode, handleScrubberInput, handleScrubber
   )
 }
 PlayerSlider.propTypes = {
-  currentSeek: PropTypes.number.isRequired,
-  handleScrubberInput: PropTypes.func.isRequired,
-  handleScrubberChange: PropTypes.func.isRequired,
+  trackDuration: PropTypes.number.isRequired,
+  currentTime: PropTypes.number.isRequired,
+  onScrubberInput: PropTypes.func.isRequired,
+  onScrubberChange: PropTypes.func.isRequired,
 }
 
 export default OnsitePlayer
