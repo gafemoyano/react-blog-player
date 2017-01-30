@@ -7,6 +7,7 @@ export default class AudioWrapper extends Component {
     isPlaying: PropTypes.bool.isRequired,
     isMuted: PropTypes.bool.isRequired,
     isLoading: PropTypes.bool.isRequired,
+    isScrubbing: PropTypes.bool.isRequired,
     loop: PropTypes.bool.isRequired,
     currentTime: PropTypes.number.isRequired,
     defaultVolume: PropTypes.number.isRequired,
@@ -40,10 +41,16 @@ export default class AudioWrapper extends Component {
     }
   }
 
+
   componentWillUnmount() {
     this.audio.removeEventListener('progress', this.handleProgress)
     this.audio.removeEventListener('timeupdate', this.handleTimeUpdate)
     this.audio.removeEventListener('ended', this.handleMediaEnd)
+    this.audio.removeEventListener('loadeddata', this.handleLoadedData)
+
+  }
+  getCurrentTime() {
+    return this.audio.currentTime
   }
 
   handleTimeUpdate = () => {
@@ -65,6 +72,7 @@ export default class AudioWrapper extends Component {
     this.props.onProgress({
       trackDuration: this.audio.trackDuration,
       buffered: this.audio.buffered,
+      currentTime: this.audio.currentTime,
     })
   }
   updateCurrentTime() {
@@ -96,13 +104,7 @@ export default class AudioWrapper extends Component {
       audio.play()
     }
   }
-  loadAudio(audioUrl) {
-    this.audioLoaded = false;
-    this.audio.load(audioUrl, () => {
-      this.audioLoaded = true;
-      this.play();
-    });
-  }
+
   updateVolume() {
     const volume = this.props.defaultVolume
     if (volume < 0){

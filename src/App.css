@@ -3260,7 +3260,8 @@ body.nav-open .navigation-tray_curtain {
 }
 
 .podcast-player-button--play,.podcast-player-button--play.is-paused {
-    background-image: url("./assets/img/play.svg")
+    background-image: url("./assets/img/play.svg");
+    background-size: 18px;
 }
 
 .podcast-player-button--play.is-paused {

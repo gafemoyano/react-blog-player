@@ -19,7 +19,7 @@ class OnsitePlayer extends Component {
     prevAudioTitle: PropTypes.string,
   }
   static defaultProps = {
-    albumArt: DefaultArt,
+    artUrl: DefaultArt,
     audioTitle: "Your favorite song - Your favorite album",
     playerTitle: "React Onsite Player",
   }
@@ -28,15 +28,16 @@ class OnsitePlayer extends Component {
     isActive: true,
     isHidden: false,
     isPaused: true,Art: PropTypes.string,
-    isPlaying: true,
+    isPlaying: false,
     isMuted: false,
     isLoading: false,
+    isScrubbing: false,
     loop: false,
-    defaultTime: 0,
     defaultVolume: 0.5,
     source: SampleAudio,
     trackDuration : 0,
     currentTime: 0,
+    displayTime: 0,
     currentAudioTitle: "",
     detailsLoaded: false,
   }
@@ -53,9 +54,12 @@ class OnsitePlayer extends Component {
     this.state.isPlaying ? this.pause() : this.play()
   }
   handleTimeUpdate = (data) => {
-    this.setState({
-      trackDuration: data.trackDuration,
-    })
+    if(!this.state.isScrubbing){
+      this.setState({
+        trackDuration: data.trackDuration,
+        displayTime: data.currentTime,
+      })
+    }
   }
   handlePlaybackEnd = () => {
     this.setState({
@@ -65,15 +69,34 @@ class OnsitePlayer extends Component {
       currentTime: 0,
     })
   }
-  handleProgress = (event) => {
-    console.log(event )
+  handleProgress = (data) => {
+    if (!this.state.isSeeking) {
+      this.setState({currentTime: data.currentTime})
+    }
   }
-  handleScrubberInput = (event) => {
-
+  handleIncrement = (interval) => {
+    this.setState({currentTime: this.state.displayTime + 15})
+  }
+  handleDecrement = (interval) => {
+    this.setState({currentTime: this.state.displayTime - 15})
+  }
+  handleScrubberMouseDown = event => {
+    this.setState({isScrubbing: true})
+  }
+  handleScrubberMouseUp = (event) => {
+    const newTime = event.target.value > 0 ? parseInt(event.target.value, 10) : 0
+    this.setState({
+      isScrubbing: false,
+      currentTime: newTime,
+    })
   }
   handleScrubberChange = (event) => {
-
+    const seekedTime = event.target.value > 0 ? parseInt(event.target.value, 10) : 0
+    this.setState({
+      displayTime: seekedTime,
+    })
   }
+
   close = () => {
     this.pause()
     this.setState({isActive: false})
@@ -109,17 +132,6 @@ class OnsitePlayer extends Component {
     .catch(error => console.log(error))
   }
 
-  scrub(to) {
-    this.setState({
-      isScrubbing: true,
-      percentComplete: to / this.episode.duration() * 100
-    })
-  }
-  scrubEnd(to) {
-    this.setState({
-      isScrubbing: false,
-    })
-  }
   seekBy() {
 
   }
@@ -134,10 +146,12 @@ class OnsitePlayer extends Component {
     return (
       <div>
         <AudioWrapper
+          ref={ node => this.audio = node}
           source={this.state.source}
           isPlaying={this.state.isPlaying}
           isMuted={this.state.isMuted}
           isLoading={this.state.isLoading}
+          isScrubbing={this.state.isScrubbing}
           loop={this.state.loop}
           currentTime={this.state.currentTime}
           defaultVolume={this.state.defaultVolume}
@@ -145,6 +159,8 @@ class OnsitePlayer extends Component {
           onTimeUpdate={this.handleTimeUpdate}
           onEnd={this.handlePlaybackEnd}
           onLoadedData={this.handleLoadedData}
+          onSeeking={this.handleSeeking}
+          onSeeked={this.handleSeeked}
         />
         <div className="player-container">
           <div id="player">
@@ -162,14 +178,17 @@ class OnsitePlayer extends Component {
                 isPlaying={this.state.isPlaying}
                 isLoading={this.state.isLoading}
                 onPlayPause={this.handlePlayPause}
+                onIncrement={this.handleIncrement}
+                onDecrement={this.handleDecrement}
               />
               <PlayerSlider
                 trackDuration={this.state.trackDuration}
-                currentTime={this.state.currentTime}
+                currentTime={this.state.displayTime}
                 title={this.props.playerTitle}
                 audioTitle={this.props.audioTitle}
-                onScrubberInput={this.handleScrubberInput}
                 onScrubberChange={this.handleScrubberChange}
+                onMouseDown={this.handleScrubberMouseDown}
+                onMouseUp={this.handleScrubberMouseUp}
               />
             </figure>
           </div>
@@ -219,7 +238,14 @@ PlayerDetails.propTypes = {
   audioTitle: PropTypes.string,
 }
 
-const PlayerButtons = ({isPaused, isPlaying, isLoading, onPlayPause}) => {
+const PlayerButtons = ({
+  isPaused,
+  isPlaying,
+  isLoading,
+  onPlayPause,
+  onIncrement,
+  onDecrement,
+}) => {
   const playButtonClasses = cx(
     'podcast-player-button',
     'podcast-player-button--play',
@@ -240,17 +266,19 @@ const PlayerButtons = ({isPaused, isPlaying, isLoading, onPlayPause}) => {
       </button>
       <button
         className="podcast-player-button podcast-player-button--back15 js-player-back-button"
-        title="Seek back 15 seconds">
+        title="Seek back 15 seconds"
+        onClick={onDecrement.bind(15)}>
       </button>
 
       <button
         className={playButtonClasses}
-        onClick={onPlayPause}>
+        onClick={onPlayPause.bind(15)}>
       </button>
 
       <button
         className="podcast-player-button podcast-player-button--forward15 js-player-forward-button"
-        title="Seek forward 15 seconds">
+        title="Seek forward 15 seconds"
+        onClick={onIncrement}>
       </button>
       <button className="podcast-player-button podcast-player-button--episode js-player-next-button" title="Listen to the next episode">
         <img
@@ -287,8 +315,10 @@ const PlayerSlider = ({
   currentTime,
   title,
   audioTitle,
-  onScrubberInput,
-  onScrubberChange}) => {
+  onScrubberChange,
+  onMouseDown,
+  onMouseUp,
+}) => {
 
   const roundedCurrentTime = Math.round(currentTime || 0)
   const percentComplete = roundedCurrentTime / trackDuration * 100
@@ -305,8 +335,9 @@ const PlayerSlider = ({
             className="range-slider_range js-player-scrubber"
             type="range"
             value={roundedCurrentTime}
-            onInput={() => onScrubberInput}
-            onChange={() => onScrubberChange}
+            onChange={onScrubberChange}
+            onMouseDown={onMouseDown}
+            onMouseUp={onMouseUp}
             min="0"
             max={trackDuration}/>
           <div
@@ -329,8 +360,9 @@ const PlayerSlider = ({
 PlayerSlider.propTypes = {
   trackDuration: PropTypes.number.isRequired,
   currentTime: PropTypes.number.isRequired,
-  onScrubberInput: PropTypes.func.isRequired,
   onScrubberChange: PropTypes.func.isRequired,
+  onMouseDown: PropTypes.func.isRequired,
+  onMouseUp: PropTypes.func.isRequired,
 }
 
 export default OnsitePlayer
